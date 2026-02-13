@@ -9,3 +9,7 @@ Spigot ✅
 Paper  ✅
 Purpur ✅
 Folia  ❌ (planned)
+## Planned Features
+- 1.13-1.21.x Support<br>
+- Per-World Configuration<br>
+- Security Updates if Needed
