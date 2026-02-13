@@ -1,5 +1,0 @@
-enabled: true
-check-for-update: true
-
-messages:
-  deny: "&l[&c&lBlaze&7&lSpawner&c&lLock&r&l] &cYou cannot break blaze spawners!"
