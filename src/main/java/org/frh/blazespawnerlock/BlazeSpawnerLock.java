@@ -1,5 +1,6 @@
 package org.frh.blazespawnerlock;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -14,27 +15,36 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 
 import java.io.BufferedReader;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.Iterator;
 
 public class BlazeSpawnerLock extends JavaPlugin implements Listener {
 
     /* ===============================
-       UPDATE SETTINGS
+       UPDATE SETTINGS (CHECK ONLY)
        =============================== */
     private static final String VERSION_URL =
             "https://github.com/airtagdev/BlazeSpawnerLock/releases/latest/download/version.txt";
-    private static final String DOWNLOAD_URL =
-            "https://github.com/airtagdev/BlazeSpawnerLock/releases/latest/download/BlazeSpawnerLock.jar";
 
+    private static final String RELEASE_URL =
+            "https://github.com/airtagdev/BlazeSpawnerLock/releases/latest";
 
+    // 6 hours in ticks
     private static final long UPDATE_CHECK_INTERVAL = 6L * 60L * 60L * 20L;
+
+    /* ===============================
+       MESSAGE PREFIX (IN-GAME ONLY)
+       =============================== */
+    private static final String GAME_PREFIX =
+            ChatColor.translateAlternateColorCodes(
+                    '&',
+                    "&l[&c&lBlaze&7&lSpawner&c&lLock&r&l] "
+            );
 
     private static final String BYPASS_PERMISSION = "blazespawnerlock.bypass";
     private static final String RELOAD_PERMISSION = "blazespawnerlock.reload";
@@ -53,11 +63,13 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
 
         // bStats
         int pluginId = 29525;
-        Metrics metrics = new Metrics(this, pluginId);
+        new Metrics(this, pluginId);
 
         if (checkForUpdate) {
+            // Immediate check
             checkForUpdates();
 
+            // Then every 6 hours
             getServer().getScheduler().runTaskTimerAsynchronously(
                     this,
                     this::checkForUpdates,
@@ -123,7 +135,6 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
 
         if (spawner.getSpawnedType() == EntityType.BLAZE) {
             event.setCancelled(true);
-
             event.getPlayer().sendMessage(denyMessage);
 
             try {
@@ -166,8 +177,6 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
        =============================== */
     private void checkForUpdates() {
         try {
-            getLogger().info("Checking for updates...");
-
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(new URL(VERSION_URL).openStream())
             );
@@ -182,26 +191,27 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
                 return;
             }
 
-            getLogger().warning("New version found: " + remoteVersion);
-            getLogger().warning("Downloading update...");
+            getLogger().warning("Plugin is out of date. A newer version is available.");
 
-            var pluginsDir = getDataFolder().getParentFile();
-            var newJar = new java.io.File(pluginsDir, getFile().getName() + ".new");
-
-            try (InputStream in = new URL(DOWNLOAD_URL).openStream()) {
-                Files.copy(in, newJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            if (getFile().delete()) {
-                newJar.renameTo(getFile());
-                getLogger().warning("Update downloaded successfully.");
-                getLogger().warning("RESTART THE SERVER to apply the update.");
-            } else {
-                getLogger().severe("Update downloaded but failed to replace the old plugin file.");
-            }
+            Bukkit.getScheduler().runTask(this, () -> {
+                Bukkit.getOnlinePlayers().stream()
+                        .filter(p -> p.isOp())
+                        .forEach(p -> {
+                            TextComponent msg = new TextComponent(
+                                    GAME_PREFIX + "&6A new version is available. Click &bhere &6to download."
+                            );
+                            msg.setClickEvent(
+                                    new ClickEvent(
+                                            ClickEvent.Action.OPEN_URL,
+                                            RELEASE_URL
+                                    )
+                            );
+                            p.spigot().sendMessage(msg);
+                        });
+            });
 
         } catch (Exception e) {
-            getLogger().severe("Update failed: " + e.getMessage());
+            getLogger().warning("Failed to check for updates.");
         }
     }
 }
