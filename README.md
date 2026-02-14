@@ -14,7 +14,8 @@ Version: **1.21.x** (wider support planned)<br>
 **blazespawnerlock.reload** - reload the plugin configuration (default: op)
 ## Commands
 **/blazespawnerlock reload** - reload the plugin configuration<br>
-**/bsl reload** - shorter alias to default reload command
+**/blazespawnerlock update** - command to check for update<br>
+**/bsl** - command alias
 ## Planned Features
 - **1.20-1.21.x** Support<br>
 - Per-World Configuration<br>
