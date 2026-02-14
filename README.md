@@ -11,7 +11,7 @@ Version: **1.21.x** (wider support planned)<br>
 **Folia**  ❌ (planned)
 ## Permissions
 **blazespawnerlock.bypass** - bypass the plugin and allow players with the permission to break spawners (default: op)<br>
-**blazespawnerlock.reload** - reload the plugin configuration (default:op)
+**blazespawnerlock.reload** - reload the plugin configuration (default: op)
 ## Commands
 **/blazespawnerlock reload** - reload the plugin configuration<br>
 **/bsl reload** - shorter alias to default reload command
