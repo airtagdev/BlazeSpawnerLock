@@ -17,6 +17,6 @@ permissions:
 commands:
   blazespawnerlock:
     description: Main BlazeSpawnerLock command
-    usage: /<command> reload
+    usage: /<command> reload | update
     permission: blazespawnerlock.reload
     aliases: [bsl]

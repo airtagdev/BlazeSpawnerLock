@@ -9,10 +9,12 @@ import org.bukkit.block.CreatureSpawner;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -21,7 +23,10 @@ import net.md_5.bungee.api.chat.TextComponent;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.UUID;
 
 public class BlazeSpawnerLock extends JavaPlugin implements Listener {
 
@@ -46,11 +51,17 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
             );
 
     private static final String BYPASS_PERMISSION = "blazespawnerlock.bypass";
-    private static final String RELOAD_PERMISSION = "blazespawnerlock.reload";
+    private static final String ADMIN_PERMISSION = "blazespawnerlock.reload";
 
     private boolean enabled;
     private boolean checkForUpdate;
     private String denyMessage;
+
+    /* ===============================
+       UPDATE STATE
+       =============================== */
+    private boolean updateAvailable = false;
+    private final Set<UUID> notifiedOps = new HashSet<>();
 
     @Override
     public void onEnable() {
@@ -102,7 +113,7 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
 
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
 
-            if (!sender.hasPermission(RELOAD_PERMISSION)) {
+            if (!sender.hasPermission(ADMIN_PERMISSION)) {
                 sender.sendMessage("§cYou do not have permission to do this.");
                 return true;
             }
@@ -112,7 +123,29 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
             return true;
         }
 
-        sender.sendMessage("§cUsage: /" + label + " reload");
+        if (args.length == 1 && args[0].equalsIgnoreCase("update")) {
+
+            if (!sender.hasPermission(ADMIN_PERMISSION)) {
+                sender.sendMessage("§cYou do not have permission to do this.");
+                return true;
+            }
+
+            if (!updateAvailable) {
+                sender.sendMessage(GAME_PREFIX + "§aPlugin is up to date.");
+                return true;
+            }
+
+            sender.sendMessage(GAME_PREFIX + "§6A new version is available.");
+
+            if (sender instanceof Player player) {
+                sendUpdateMessage(player);
+            } else {
+                sender.sendMessage("Download: " + RELEASE_URL);
+            }
+            return true;
+        }
+
+        sender.sendMessage("§cUsage: /" + label + " reload | update");
         return true;
     }
 
@@ -170,6 +203,17 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
     }
 
     /* ===============================
+       UPDATE LOGIN NOTIFICATION
+       =============================== */
+    @EventHandler
+    public void onOpJoin(PlayerJoinEvent event) {
+        if (!updateAvailable) return;
+        if (!event.getPlayer().isOp()) return;
+
+        sendUpdateMessage(event.getPlayer());
+    }
+
+    /* ===============================
        UPDATE HANDLER
        =============================== */
     private void checkForUpdates() {
@@ -184,37 +228,48 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
             String localVersion = getDescription().getVersion();
 
             if (!isNewerVersion(remoteVersion, localVersion)) {
+                updateAvailable = false;
                 getLogger().info("Plugin is up to date.");
                 return;
             }
 
+            updateAvailable = true;
             getLogger().warning("Plugin is out of date. A newer version is available.");
 
-            Bukkit.getScheduler().runTask(this, () -> {
-                Bukkit.getOnlinePlayers().stream()
-                        .filter(p -> p.isOp())
-                        .forEach(p -> {
-                            TextComponent msg = new TextComponent(
-                                    ChatColor.translateAlternateColorCodes(
-                                            '&',
-                                            GAME_PREFIX + "&6A new version is available. Click &bhere &6to download."
-                                    )
-                            );
-                            msg.setClickEvent(
-                                    new ClickEvent(
-                                            ClickEvent.Action.OPEN_URL,
-                                            RELEASE_URL
-                                    )
-                            );
-                            p.spigot().sendMessage(msg);
-                        });
-            });
+            Bukkit.getScheduler().runTask(this, () ->
+                    Bukkit.getOnlinePlayers().stream()
+                            .filter(Player::isOp)
+                            .forEach(this::sendUpdateMessage)
+            );
 
         } catch (Exception e) {
             getLogger().warning("Failed to check for updates.");
         }
     }
 
+    private void sendUpdateMessage(Player player) {
+        UUID uuid = player.getUniqueId();
+        if (notifiedOps.contains(uuid)) return;
+
+        notifiedOps.add(uuid);
+
+        TextComponent msg = new TextComponent(
+                ChatColor.translateAlternateColorCodes(
+                        '&',
+                        GAME_PREFIX + "&6A new version is available. Click &bhere &6to download."
+                )
+        );
+        msg.setClickEvent(new ClickEvent(
+                ClickEvent.Action.OPEN_URL,
+                RELEASE_URL
+        ));
+
+        player.spigot().sendMessage(msg);
+    }
+
+    /* ===============================
+       VERSION COMPARISON
+       =============================== */
     private boolean isNewerVersion(String remote, String local) {
         String[] remoteParts = remote.split("\\.");
         String[] localParts = local.split("\\.");
@@ -228,7 +283,7 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
             if (remoteNum > localNum) return true;
             if (remoteNum < localNum) return false;
         }
-        return false; // equal
+        return false;
     }
 
     private int parseInt(String value) {
