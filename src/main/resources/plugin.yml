@@ -1,5 +1,5 @@
 name: BlazeSpawnerLock
-version: 1.7
+version: 1.7.1
 main: org.frh.blazespawnerlock.BlazeSpawnerLock
 api-version: '1.21'
 author: airtagdev

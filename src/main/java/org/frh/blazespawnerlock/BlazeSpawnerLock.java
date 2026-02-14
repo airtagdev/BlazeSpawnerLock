@@ -26,7 +26,7 @@ import java.util.Iterator;
 public class BlazeSpawnerLock extends JavaPlugin implements Listener {
 
     /* ===============================
-       UPDATE SETTINGS (CHECK ONLY)
+       UPDATE SETTINGS
        =============================== */
     private static final String VERSION_URL =
             "https://github.com/airtagdev/BlazeSpawnerLock/releases/latest/download/version.txt";
@@ -34,11 +34,10 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
     private static final String RELEASE_URL =
             "https://github.com/airtagdev/BlazeSpawnerLock/releases/latest";
 
-    // 6 hours in ticks
     private static final long UPDATE_CHECK_INTERVAL = 6L * 60L * 60L * 20L;
 
     /* ===============================
-       MESSAGE PREFIX (IN-GAME ONLY)
+       MESSAGE PREFIX
        =============================== */
     private static final String GAME_PREFIX =
             ChatColor.translateAlternateColorCodes(
@@ -66,10 +65,8 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
         new Metrics(this, pluginId);
 
         if (checkForUpdate) {
-            // Immediate check
             checkForUpdates();
 
-            // Then every 6 hours
             getServer().getScheduler().runTaskTimerAsynchronously(
                     this,
                     this::checkForUpdates,
@@ -186,7 +183,7 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
 
             String localVersion = getDescription().getVersion();
 
-            if (remoteVersion.equals(localVersion)) {
+            if (!isNewerVersion(remoteVersion, localVersion)) {
                 getLogger().info("Plugin is up to date.");
                 return;
             }
@@ -198,7 +195,10 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
                         .filter(p -> p.isOp())
                         .forEach(p -> {
                             TextComponent msg = new TextComponent(
-                                    GAME_PREFIX + "&6A new version is available. Click &bhere &6to download."
+                                    ChatColor.translateAlternateColorCodes(
+                                            '&',
+                                            GAME_PREFIX + "&6A new version is available. Click &bhere &6to download."
+                                    )
                             );
                             msg.setClickEvent(
                                     new ClickEvent(
@@ -212,6 +212,30 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
 
         } catch (Exception e) {
             getLogger().warning("Failed to check for updates.");
+        }
+    }
+
+    private boolean isNewerVersion(String remote, String local) {
+        String[] remoteParts = remote.split("\\.");
+        String[] localParts = local.split("\\.");
+
+        int maxLength = Math.max(remoteParts.length, localParts.length);
+
+        for (int i = 0; i < maxLength; i++) {
+            int remoteNum = i < remoteParts.length ? parseInt(remoteParts[i]) : 0;
+            int localNum = i < localParts.length ? parseInt(localParts[i]) : 0;
+
+            if (remoteNum > localNum) return true;
+            if (remoteNum < localNum) return false;
+        }
+        return false; // equal
+    }
+
+    private int parseInt(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return 0;
         }
     }
 }

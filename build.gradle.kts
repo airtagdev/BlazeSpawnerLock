@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "org.frh"
-version = "1.7"
+version = "1.7.1"
 
 java {
     toolchain {
