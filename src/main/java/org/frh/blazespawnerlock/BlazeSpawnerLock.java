@@ -14,6 +14,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,6 +33,7 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
     private static final String DOWNLOAD_URL =
             "https://github.com/airtagdev/BlazeSpawnerLock/releases/latest/download/BlazeSpawnerLock.jar";
 
+
     private static final long UPDATE_CHECK_INTERVAL = 6L * 60L * 60L * 20L;
 
     private static final String BYPASS_PERMISSION = "blazespawnerlock.bypass";
@@ -49,20 +51,24 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
         getServer().getPluginManager().registerEvents(this, this);
         getLogger().info("Plugin successfully loaded");
 
+        // bStats
+        int pluginId = 29525;
+        Metrics metrics = new Metrics(this, pluginId);
+
         if (checkForUpdate) {
             checkForUpdates();
 
             getServer().getScheduler().runTaskTimerAsynchronously(
                     this,
                     this::checkForUpdates,
-                    UPDATE_CHECK_INTERVAL,   // delay
-                    UPDATE_CHECK_INTERVAL    // period
+                    UPDATE_CHECK_INTERVAL,
+                    UPDATE_CHECK_INTERVAL
             );
         }
     }
 
     /* ===============================
-       CONFIG HANDLING
+       CONFIG
        =============================== */
     private void loadConfig() {
         reloadConfig();
@@ -156,7 +162,7 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
     }
 
     /* ===============================
-       UPDATE CHECKER
+       UPDATE HANDLER
        =============================== */
     private void checkForUpdates() {
         try {
@@ -171,7 +177,10 @@ public class BlazeSpawnerLock extends JavaPlugin implements Listener {
 
             String localVersion = getDescription().getVersion();
 
-            if (remoteVersion.equals(localVersion)) return;
+            if (remoteVersion.equals(localVersion)) {
+                getLogger().info("Plugin is up to date.");
+                return;
+            }
 
             getLogger().warning("New version found: " + remoteVersion);
             getLogger().warning("Downloading update...");
